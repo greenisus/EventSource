@@ -135,13 +135,20 @@
             
             for (NSString *component in components) {
                 
-                NSArray *pairs = [component componentsSeparatedByString:@": "];
-                if ([component hasPrefix:@"id"]) {
-                    e.id = pairs[1];
-                } else if ([component hasPrefix:@"event"]) {
-                    e.event = pairs[1];
-                } else if ([component hasPrefix:@"data"]) {
-                    e.data = pairs[1];
+                if ([component length] == 0) {
+                    continue;
+                }
+                
+                NSInteger index = [component rangeOfString:@": "].location;
+                NSString *key = [component substringToIndex:index];
+                NSString *value = [component substringFromIndex:index + 2];
+                
+                if ([key isEqualToString:@"id"]) {
+                    e.id = value;
+                } else if ([key isEqualToString:@"event"]) {
+                    e.event = value;
+                } else if ([key isEqualToString:@"data"]) {
+                    e.data = value;
                     dataIsSet = YES;
                 }
                 
