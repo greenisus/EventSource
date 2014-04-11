@@ -11,7 +11,6 @@
 #define ES_RECONNECT_TIMEOUT 1.0
 
 @interface EventSource () <NSURLConnectionDelegate, NSURLConnectionDataDelegate> {
-    NSURL *eventURL;
     NSURLConnection *eventSource;
     NSMutableDictionary *listeners;
     BOOL wasClosed;
@@ -32,7 +31,7 @@
 {
     if (self = [super init]) {
         listeners = [NSMutableDictionary dictionary];
-        eventURL = URL;
+        self.eventURL = URL;
         
         dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(ES_RECONNECT_TIMEOUT * NSEC_PER_SEC));
         dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
@@ -69,7 +68,7 @@
 - (void)open
 {
     wasClosed = NO;
-    NSURLRequest *request = [NSURLRequest requestWithURL:eventURL];
+    NSURLRequest *request = [NSURLRequest requestWithURL:self.eventURL];
     eventSource = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:YES];
 }
 
@@ -161,7 +160,7 @@
                 // if everything is set, we're done building the event
                 if (![e.id isEqualToString:@""] && ![e.event isEqualToString:@""] && dataIsSet) {
                     
-                    if (![e.data isEqualToString:@""]) {
+                    if (e.data != nil && ![e.data isEqualToString:@""]) {
                         
                         NSArray *messageHandlers = listeners[MessageEvent];
                         for (EventSourceEventHandler handler in messageHandlers) {
