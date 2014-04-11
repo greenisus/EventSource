@@ -123,13 +123,18 @@
     
     if ([eventString hasSuffix:@"\n\n"]) {
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
-            eventString = [eventString stringByReplacingOccurrencesOfString:@"\n\n" withString:@""];
+            
+            eventString = [eventString stringByReplacingOccurrencesOfString:@"\n\n" withString:@"\n"];
+            
             NSMutableArray *components = [[eventString componentsSeparatedByString:@"\n"] mutableCopy];
             
             Event *e = [Event new];
             e.readyState = kEventStateOpen;
             
+            BOOL dataIsSet = NO;
+            
             for (NSString *component in components) {
+                
                 NSArray *pairs = [component componentsSeparatedByString:@": "];
                 if ([component hasPrefix:@"id"]) {
                     e.id = pairs[1];
@@ -137,24 +142,41 @@
                     e.event = pairs[1];
                 } else if ([component hasPrefix:@"data"]) {
                     e.data = pairs[1];
+                    dataIsSet = YES;
                 }
+                
+                // if everything is set, we're done building the event
+                if (![e.id isEqualToString:@""] && ![e.event isEqualToString:@""] && dataIsSet) {
+                    
+                    if (![e.data isEqualToString:@""]) {
+                        
+                        NSArray *messageHandlers = listeners[MessageEvent];
+                        for (EventSourceEventHandler handler in messageHandlers) {
+                            dispatch_async(dispatch_get_main_queue(), ^{
+                                handler(e);
+                            });
+                        }
+                        
+                        if (e.event != nil) {
+                            NSArray *namedEventhandlers = listeners[e.event];
+                            for (EventSourceEventHandler handler in namedEventhandlers) {
+                                dispatch_async(dispatch_get_main_queue(), ^{
+                                    handler(e);
+                                });
+                            }
+                        }
+                        
+                    }
+                    
+                    e = [Event new];
+                    e.readyState = kEventStateOpen;
+                    dataIsSet = NO;
+                    
+                }
+                
+                
             }
             
-            NSArray *messageHandlers = listeners[MessageEvent];
-            for (EventSourceEventHandler handler in messageHandlers) {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    handler(e);
-                });
-            }
-            
-            if (e.event != nil) {
-                NSArray *namedEventhandlers = listeners[e.event];
-                for (EventSourceEventHandler handler in namedEventhandlers) {
-                    dispatch_async(dispatch_get_main_queue(), ^{
-                        handler(e);
-                    });
-                }
-            }
         });
     }
 }
