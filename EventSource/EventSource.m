@@ -140,8 +140,14 @@
                 }
                 
                 NSInteger index = [component rangeOfString:@": "].location;
-                NSString *key = [component substringToIndex:index];
-                NSString *value = [component substringFromIndex:index + 2];
+                NSString *key = nil;
+                if ([component length] > index) {
+                    key = [component substringToIndex:index];
+                }
+                NSString *value = nil;
+                if ([component length] > index + 2) {
+                    value = [component substringFromIndex:index + 2];
+                }
                 
                 if ([key isEqualToString:@"id"]) {
                     e.id = value;
